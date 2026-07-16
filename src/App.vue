@@ -27,6 +27,11 @@ let particles = []
 let mouse = { x: -999, y: -999 }
 let animId = null
 
+// 事件处理器引用，用于 onUnmounted 时移除
+let onResize = null
+let onMouseMove = null
+let onScroll = null
+
 onMounted(() => {
   // ========== 粒子 Canvas 初始化 ==========
   const c = canvasRef.value
@@ -39,7 +44,8 @@ onMounted(() => {
     h = c.height = window.innerHeight
   }
   resize()
-  window.addEventListener('resize', resize)
+  onResize = resize
+  window.addEventListener('resize', onResize)
 
   // 生成 120 个随机粒子
   for (let i = 0; i < 120; i++) {
@@ -53,10 +59,11 @@ onMounted(() => {
   }
 
   // 跟踪鼠标位置
-  window.addEventListener('mousemove', (e) => {
+  onMouseMove = (e) => {
     mouse.x = e.clientX
     mouse.y = e.clientY
-  })
+  }
+  window.addEventListener('mousemove', onMouseMove)
 
   /**
    * 每帧绘制：
@@ -116,16 +123,19 @@ onMounted(() => {
 
   // ========== 滚动 → 透明度映射 ==========
   // 滚动 1 个屏幕高度后 opacity 变为 1（完全显示）
-  const handleScroll = () => {
+  onScroll = () => {
     const scrollY = window.scrollY
     opacity.value = Math.min(scrollY / window.innerHeight, 1)
   }
-  window.addEventListener('scroll', handleScroll)
+  window.addEventListener('scroll', onScroll)
 })
 
 // ---- 组件卸载时清理 ---- 
 onUnmounted(() => {
-  cancelAnimationFrame(animId)           // 停止动画循环，防止内存泄漏
+  cancelAnimationFrame(animId)                        // 停止动画循环
+  if (onResize) window.removeEventListener('resize', onResize)
+  if (onMouseMove) window.removeEventListener('mousemove', onMouseMove)
+  if (onScroll) window.removeEventListener('scroll', onScroll)
 })
 
 // ---- 事件处理 ----
